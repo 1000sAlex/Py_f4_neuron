@@ -9,12 +9,14 @@ from sklearn.model_selection import train_test_split
 from tensorflow.python.client.session import Session
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Conv1D, Dropout, Dense, Flatten, MaxPooling1D
+import os
 
 # Load data into memory
-labels = ['stationary', 'walking', 'running']
+labels = ['stationary', 'walking', 'running', 'shake']
 x = []
 y = []
 for data_lable, label in enumerate(labels):
+    print(data_lable)
     # находим все файлы в каталоге datasets с расширением csv
     filenames = glob.glob('dataset/' + label + '/*.csv')
     for filename in filenames:
@@ -55,7 +57,7 @@ def show_samples(labels, data, answers, n_samples=1):
     plt.show()
 
 
-# show_samples(labels,x2,y2,3)
+# show_samples(labels, x2, y2, 3)
 
 
 def frame(x, frame_len, hop_len):
@@ -94,12 +96,12 @@ print("Testing samples:", x_test.shape)
 model = Sequential()
 model.add(Conv1D(filters=8, kernel_size=3, activation='relu', input_shape=(26, 3)))
 model.add(MaxPooling1D(pool_size=4))
-model.add(Conv1D(filters=2, kernel_size=3, activation='relu'))
+model.add(Conv1D(filters=4, kernel_size=3, activation='relu'))
 # model.add(MaxPooling1D(pool_size=2))
 model.add(Dropout(0.5))
 model.add(Flatten())
-model.add(Dense(6, activation='relu'))
-model.add(Dense(3, activation='softmax'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(4, activation='softmax'))
 # model = tf.keras.models.Sequential([
 #   tf.keras.layers.Conv1D(filters=16, kernel_size=3, activation='relu', input_shape=(26, 3)),
 #   tf.keras.layers.Conv1D(filters=8, kernel_size=3, activation='relu'),
@@ -115,9 +117,20 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 print("Train start")
 
+# model.fit(x_train, y_train, epochs=20, verbose=0)
+# test_loss, test_acc = model.evaluate(x_test, y_test, verbose=1)
+#
+# print("Test loss:", test_loss)
+# print("Test acc:", test_acc)
+pwd = os.getcwd()
+path = pwd + '/h5'
+print(path)
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
 for a in range(10):
     model.fit(x_train, y_train, epochs=20, verbose=0)
-    test_loss, test_acc = model.evaluate(x_test,  y_test, verbose=1)
+    test_loss, test_acc = model.evaluate(x_test, y_test, verbose=1)
 
     print("Test loss:", test_loss)
     print("Test acc:", test_acc)
@@ -130,6 +143,8 @@ for a in range(10):
     json_file.write(model_json)
     json_file.close()
 
+os.chdir(pwd)
+
 y_pred = model.predict_classes(x_test)
 confusion_matrix = confusion_matrix(y_test, y_pred)
 sess = Session()
@@ -141,8 +156,7 @@ sns.heatmap(sess.run(confusion_matrix),
             yticklabels=labels,
             cmap=plt.cm.Blues,
             fmt='d', cbar=False)
-plt.tight_layout()
+# plt.tight_layout()
 plt.ylabel('True label')
 plt.xlabel('Predicted label')
 plt.show()
-
